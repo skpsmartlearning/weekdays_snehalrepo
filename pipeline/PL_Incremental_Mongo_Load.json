@@ -1,0 +1,144 @@
+{
+	"name": "PL_Incremental_Mongo_Load",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup_Watermark",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "SELECT last_load_time\nFROM watermark_table\nWHERE collection_name = '@{pipeline().parameters.collectionName}'",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_SQL",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "Copy_Incremental_Data",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Lookup_Watermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "MongoDbV2Source",
+						"batchSize": 100
+					},
+					"sink": {
+						"type": "JsonSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						},
+						"formatSettings": {
+							"type": "JsonWriteSettings"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_MongoDB",
+						"type": "DatasetReference",
+						"parameters": {
+							"collectionName": {
+								"value": "@pipeline().parameters.collectionName",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_ADLS_JSON1",
+						"type": "DatasetReference",
+						"parameters": {
+							"folderName": {
+								"value": "@pipeline().parameters.collectionName",
+								"type": "Expression"
+							},
+							"fileName": {
+								"value": "@concat(\npipeline().parameters.collectionName,\n'_',\nformatDateTime(utcNow(),'yyyyMMddHHmmss'),\n'.json'\n)",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "Update_Watermark",
+				"type": "Script",
+				"dependsOn": [
+					{
+						"activity": "Copy_Incremental_Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "LS_SQL",
+					"type": "LinkedServiceReference"
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": {
+								"value": "UPDATE watermark_table\nSET last_load_time = GETUTCDATE()\nWHERE collection_name = '@{pipeline().parameters.collectionName}'",
+								"type": "Expression"
+							}
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			}
+		],
+		"parameters": {
+			"collectionName": {
+				"type": "string",
+				"defaultValue": "office1"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-05-15T10:39:18Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,24 @@
+{
+	"name": "DS_MongoDB",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "MongoDb",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"collectionName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "MongoDbV2Collection",
+		"schema": [],
+		"typeProperties": {
+			"collection": {
+				"value": "@dataset().collectionName",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

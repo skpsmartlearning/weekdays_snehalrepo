@@ -1,0 +1,15 @@
+{
+	"name": "snehaladfac",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Enabled",
+			"editable": true
+		}
+	},
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "76141ce8-cf22-484e-ad13-133f1a4b8ebb",
+		"tenantId": "780a5da5-11cb-4b1c-a0f0-1e0bdbe18552"
+	}
+}

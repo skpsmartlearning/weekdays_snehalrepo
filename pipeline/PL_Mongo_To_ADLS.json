@@ -1,0 +1,112 @@
+{
+	"name": "PL_Mongo_To_ADLS",
+	"properties": {
+		"activities": [
+			{
+				"name": "Set_Collections",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "collectionList",
+					"value": {
+						"value": "@createArray(\n'office1',\n'office2',\n'office3',\n'office4'\n)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Set_Collections",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@variables('collectionList')",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"batchCount": 5,
+					"activities": [
+						{
+							"name": "Copy_Collection",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "MongoDbV2Source",
+									"batchSize": 100
+								},
+								"sink": {
+									"type": "JsonSink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings"
+									},
+									"formatSettings": {
+										"type": "JsonWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_MongoDB",
+									"type": "DatasetReference",
+									"parameters": {
+										"collectionName": {
+											"value": "@item()",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_ADLS_JSON",
+									"type": "DatasetReference",
+									"parameters": {
+										"folderName": {
+											"value": "@item()",
+											"type": "Expression"
+										},
+										"fileName": {
+											"value": "@concat(item(),'_',formatDateTime(utcNow(),'yyyyMMddHHmmss'),'.json')",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"variables": {
+			"collectionList": {
+				"type": "Array"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-05-15T10:24:22Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
